@@ -157,3 +157,7 @@ jQuery(function($) {
   });
 
 });
+
+const changeLang = (languageCode) => {
+  document.documentElement.setAttribute("lang", languageCode);
+ };
