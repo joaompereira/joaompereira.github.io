@@ -57,10 +57,6 @@ jQuery(function($) {
       // Add classes to elements
       base._addClasses();
         base._attachEvents();
-
-        setTimeout(function() {
-            $.fn.intervalLoop('', base._checkCartItems, 800, 3);
-        }, 500);
     },
 
     _addClasses: function() {
@@ -90,34 +86,6 @@ jQuery(function($) {
 
       // Keep subnav open if submenu item is active
     $('li.wsite-menu-subitem-wrap.wsite-nav-current').parents('.wsite-menu-wrap').addClass('open');
-
-      // Add placeholder text to inputs
-      $('.wsite-form-sublabel').each(function(){
-        var sublabel = $(this).text();
-        $(this).prev('.wsite-form-input').attr('placeholder', sublabel);
-      });
-
-      // Add fullwidth class to gallery thumbs if less than 6
-      $('.imageGallery').each(function(){
-        if ($(this).children('div').length <= 6) {
-          $(this).children('div').addClass('fullwidth-mobile');
-        }
-      });
-    },
-
-    _checkCartItems: function() {
-      var base = this;
-
-      if($('#wsite-mini-cart').find('li.wsite-product-item').length > 0) {
-        $('body').addClass('cart-full');
-      } else {
-        $('body').removeClass('cart-full');
-      }
-    },
-
-    _moveLogin: function() {
-      var loginDetach = $('#member-login').detach();
-      $('.mobile-nav .wsite-menu-default > li:last-child').after(loginDetach);
     },
 
     _attachEvents: function() {
@@ -139,11 +107,6 @@ jQuery(function($) {
             } else {}
         });
 
-      // Move cart + login
-      if ($(window).width() <= 992) {
-        $.fn.intervalLoop('.mobile-nav #member-login', base._moveLogin, 800, 5);
-      }
-
       // Window scroll
       $(window).on('scroll', function(){
         // Affix nav
@@ -163,23 +126,12 @@ jQuery(function($) {
             }
         });
 
-
-      // Store category dropdown
-      $('.wsite-com-sidebar').expandableSidebar('sidebar-expanded');
-
-      // Search filters dropdown
-      $('#wsite-search-sidebar').expandableSidebar('sidebar-expanded');
-
       // Init fancybox swipe on mobile
       if ('ontouchstart' in window) {
         $('body').on('click', 'a.w-fancybox', function() {
           base._initSwipeGallery();
         });
       }
-
-      $('.wsite-product-button, #wsite-com-product-add-to-cart, .wsite-product-item .wsite-remove-button').on('click', function(){
-          setTimeout(function() { base._checkCartItems(); }, 800);
-        });
     },
 
     _initSwipeGallery: function() {
