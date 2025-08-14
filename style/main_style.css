@@ -86,7 +86,7 @@
     vertical-align: middle;
     font-weight: 400;
     font-style: normal;
-    font-family: ProximaNova,"Open Sans",sans-serif;
+    font-family: ProximaNova,"Quattrocento Sans",sans-serif;
     -webkit-user-select: none;
     -ms-user-select: none;
     user-select: none
@@ -574,7 +574,7 @@ body {
     width: 100%;
     background: #fff;
     color: #3e3e3e;
-    font-family: "Quattrocento Sans",sans-serif;
+    font-family: "Libertinus Sans",sans-serif;
     font-size: 16px;
     font-weight: 400;
     line-height: 25px;
@@ -597,7 +597,7 @@ a {
 }
 
 a.anchor {
-    display: block;
+    display: flexbox;
     position: relative;
     top: -60px;
     visibility: hidden
@@ -615,6 +615,28 @@ h2 {
 div.paragraph,p {
     margin: 0 0 10px;
     line-height: 1.5em
+}
+
+p.bibitem {
+    text-indent: -1.2em;
+    margin-left: 2.4em;
+    margin-bottom: 1.5em;
+    font-size: smaller;
+}
+
+span.biblabel {
+    display: inline-block;
+    position: relative;
+    width: .7em;
+    top:1.4em;
+}
+
+span.bibsp {
+    display: none;
+}
+
+span.cmti-10 {
+    font-style: italic;
 }
 
 :-moz-placeholder,:-ms-input-placeholder,::-moz-placeholder,::-webkit-input-placeholder {
@@ -788,7 +810,7 @@ body.affix .cento-header .nav-wrap {
 
 .banner-wrap .banner div.paragraph,.banner-wrap .banner p {
     margin-bottom: 0;
-    font-family: "Quattrocento Sans",sans-serif;
+    font-family: "Libertinus Sans",sans-serif;
     font-size: 20px;
     font-weight: 400;
     line-height: 24px
@@ -1311,7 +1333,7 @@ div.paragraph ul,div.paragraph ul li {
     color: #fff!important
 }
 
-.wsite-not-footer .paragraph a,.wsite-not-footer h2.wsite-content-title a {
+.wsite-not-footer .paragraph a,.wsite-not-footer h2.wsite-content-title a, .thebibliography a {
     color: #004e60!important
 }
 
@@ -1329,7 +1351,12 @@ div.paragraph ul,div.paragraph ul li {
 }
 
 @media screen and (min-width:767px) {
-    #wsite-content div.paragraph,#wsite-content p,.wsite-elements.wsite-not-footer:not(.wsite-header-elements) div.paragraph,.wsite-elements.wsite-not-footer:not(.wsite-header-elements) p {
+    div.thebibliography p.bibitem {
+        font-size: 16px!important;
+        line-height: 22px!important
+    }
+
+    #wsite-content div.paragraph,#wsite-content p:not(.bibitem),.wsite-elements.wsite-not-footer:not(.wsite-header-elements) div.paragraph,.wsite-elements.wsite-not-footer:not(.wsite-header-elements) p:not(.bibitem) {
         font-size: 18px!important;
         line-height: 25px!important
     }
