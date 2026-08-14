@@ -1394,7 +1394,21 @@ h1 {
     color: #ba0c2f;
     text-align: center;
     font-size: 2.4rem;
-    margin: 40px auto 20px;
+    margin: 40px auto 60px;
+}
+
+.calendar-subscribe {
+    margin: 0 0 10px 0;
+    font-size: 1.05rem;
+}
+
+.calendar-subscribe + p {
+    margin-bottom: 30px;
+}
+
+.calendar-subscribe + p a {
+    color: #006E70;
+    font-weight: 700;
 }
 
 .ics-calendar {
