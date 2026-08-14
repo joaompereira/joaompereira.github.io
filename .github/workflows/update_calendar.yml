@@ -1,0 +1,36 @@
+name: Update Calendar
+
+on:
+  schedule:
+    - cron: '0 * * * *'   # Daily at midnight UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download file
+        run: |
+          curl -L \
+            "https://calendar.google.com/calendar/ical/ank2pdmcsvuanuimgn4mmfoqtiilbjbs%40import.calendar.google.com/public/basic.ics" \
+            -o uploads/apmath_calendar.ics
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          diff -q \
+            <(git show HEAD:uploads/apmath_calendar.ics 2>/dev/null | grep -v '^DTSTAMP:') \
+            <(grep -v '^DTSTAMP:' uploads/apmath_calendar.ics) >/dev/null || (
+              git add uploads/apmath_calendar.ics
+              git commit -m "Update calendar"
+              git push
+            )

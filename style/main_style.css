@@ -1379,3 +1379,114 @@ div.paragraph ul,div.paragraph ul li {
         line-height: 23px!important
     }
 }
+
+/* ==========================================================
+   APPLIED MATH SEMINAR PAGE
+   ========================================================== */
+
+body {
+    background: #fff;
+    color: #000;
+}
+
+h1 {
+    font-family: "Alegreya SC", serif;
+    color: #ba0c2f;
+    text-align: center;
+    font-size: 2.4rem;
+    margin: 40px auto 20px;
+}
+
+.ics-calendar {
+    max-width: 960px;
+    margin: 0 auto 60px;
+    padding: 0 20px;
+}
+
+/* Individual seminar card */
+
+.agenda-event {
+    background: #ffffff;
+    border-left: 6px solid #ba0c2f;
+    border-radius: 6px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+
+    box-shadow:
+        0 2px 6px rgba(0,0,0,0.08);
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.agenda-event:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 4px 12px rgba(0,0,0,0.12);
+}
+
+/* Date */
+
+.agenda-date {
+    display: inline-block;
+    color: #ba0c2f;
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.03em;
+    margin-bottom: 10px;
+}
+
+/* Speaker */
+
+.agenda-title {
+    margin: 0 0 12px 0;
+    color: #474569;
+    font-family: "Alegreya SC", serif;
+    font-size: 1.5rem;
+    line-height: 1.3;
+}
+
+/* Abstract */
+
+.agenda-description {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: #111;
+}
+
+.agenda-description strong {
+    color: #ba0c2f;
+}
+
+/* Add spacing between title and abstract */
+
+.agenda-description br {
+    display: block;
+    content: "";
+    margin-top: 10px;
+}
+
+/* Empty talks (TBA) appear lighter */
+
+.agenda-title:contains("TBA") {
+    opacity: 0.9;
+}
+
+/* Mobile */
+
+@media screen and (max-width: 767px) {
+
+    h1 {
+        font-size: 2rem;
+        margin-top: 20px;
+    }
+
+    .agenda-event {
+        padding: 16px;
+    }
+
+    .agenda-title {
+        font-size: 1.25rem;
+    }
+}
