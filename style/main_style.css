@@ -1393,22 +1393,9 @@ h1 {
     font-family: "Alegreya SC", serif;
     color: #ba0c2f;
     text-align: center;
-    font-size: 2.4rem;
+    font-size: 2.5rem;
     margin: 40px auto 60px;
-}
-
-.calendar-subscribe {
-    margin: 0 0 10px 0;
-    font-size: 1.05rem;
-}
-
-.calendar-subscribe + p {
-    margin-bottom: 30px;
-}
-
-.calendar-subscribe + p a {
-    color: #006E70;
-    font-weight: 700;
+    line-height: 1.2;
 }
 
 .ics-calendar {
@@ -1457,7 +1444,7 @@ h1 {
     margin: 0 0 12px 0;
     color: #474569;
     font-family: "Alegreya SC", serif;
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     line-height: 1.3;
 }
 
