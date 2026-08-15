@@ -88,12 +88,14 @@ async function getICSAgendaHTML(icsUrl) {
         const rawDescription = event.description || "";
         const parsed = parseDescription(String(rawDescription));
 
-        const titleText = parsed.title || event.summary || "Untitled event";
-        const speakerText = parsed.speaker || "TBA";
+        // Speaker should come from the event SUMMARY (empty if absent)
+        const speakerText = event.summary || "";
+        // Title and abstract are extracted from the DESCRIPTION using the regex
+        const titleText = parsed.title || "";
 
-        const eventSlug = slugify(`${formattedDate}-${titleText}`) || slugify(event.summary || "event");
-        const eventId = `event-${eventSlug}`;
-        const speakerId = speakerText && speakerText !== "TBA" ? `speaker-${slugify(speakerText)}` : "";
+        // Anchor IDs are defined only by the date (YYYY-MM-DD)
+        const dateSlug = eventDate.toISOString().slice(0, 10);
+        const eventId = `event-${dateSlug}`;
 
         const title = escapeHTML(titleText);
         const descriptionHTML = formatDescription(rawDescription);
@@ -105,17 +107,15 @@ async function getICSAgendaHTML(icsUrl) {
                     ${formattedDate}
                 </time>
 
-                <h3 class="agenda-title">
-                    ${title}
-                </h3>
+                ${title ? `<h3 class="agenda-title">${title}</h3>` : ""}
 
-                ${speakerText && speakerText !== "TBA" ? `<p class="agenda-speaker"><a id="${speakerId}" class="speaker-anchor">${escapeHTML(speakerText)}</a></p>` : `<p class="agenda-speaker">TBA</p>`}
+                ${speakerText ? `<p class="agenda-speaker"><a id="${speakerId}" class="speaker-anchor">${escapeHTML(speakerText)}</a></p>` : ""}
 
                 ${descriptionHTML ? `<div class="agenda-description">${descriptionHTML}</div>` : ""}
             </article>
         `;
 
-        rows.push({ date: formattedDate, speaker: speakerText, title: titleText, eventId, speakerId });
+        rows.push({ date: formattedDate, speaker: speakerText, title: titleText, eventId });
     }
 
     // Build the compact table
@@ -137,12 +137,10 @@ async function getICSAgendaHTML(icsUrl) {
 
     for (const r of rows) {
         const dateLink = `#${r.eventId}`;
-        const speakerLink = r.speaker !== "TBA" && r.speakerId ? `#${r.speakerId}` : null;
-
         tableHtml += `
             <tr>
                 <td class="agenda-col-date"><a href="${dateLink}">${escapeHTML(r.date)}</a></td>
-                <td class="agenda-col-speaker">${speakerLink ? `<a href="${speakerLink}">${escapeHTML(r.speaker)}</a>` : escapeHTML(r.speaker)}</td>
+                <td class="agenda-col-speaker">${escapeHTML(r.speaker)}</td>
                 <td class="agenda-col-title">${escapeHTML(r.title)}</td>
             </tr>
         `;
