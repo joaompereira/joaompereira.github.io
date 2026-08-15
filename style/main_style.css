@@ -1481,12 +1481,6 @@ h1 {
     margin-top: 10px;
 }
 
-/* Empty talks (TBA) appear lighter */
-
-.agenda-title:contains("TBA") {
-    opacity: 0.9;
-}
-
 /* Mobile */
 
 @media screen and (max-width: 767px) {

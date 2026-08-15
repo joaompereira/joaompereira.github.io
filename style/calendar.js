@@ -109,7 +109,7 @@ async function getICSAgendaHTML(icsUrl) {
 
                 ${title ? `<h3 class="agenda-title">${title}</h3>` : ""}
 
-                ${speakerText ? `<p class="agenda-speaker"><a id="${speakerId}" class="speaker-anchor">${escapeHTML(speakerText)}</a></p>` : ""}
+                ${speakerText ? `<p class="agenda-speaker">${escapeHTML(speakerText)}</p>` : ""}
 
                 ${descriptionHTML ? `<div class="agenda-description">${descriptionHTML}</div>` : ""}
             </article>
