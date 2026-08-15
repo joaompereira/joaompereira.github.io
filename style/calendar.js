@@ -97,7 +97,6 @@ async function getICSAgendaHTML(icsUrl) {
         const dateSlug = eventDate.toISOString().slice(0, 10);
         const eventId = `event-${dateSlug}`;
 
-        const title = escapeHTML(titleText);
         const descriptionHTML = formatDescription(rawDescription);
 
         // Detailed entry with anchors for event and speaker
@@ -107,9 +106,7 @@ async function getICSAgendaHTML(icsUrl) {
                     ${formattedDate}
                 </time>
 
-                ${title ? `<h3 class="agenda-title">${title}</h3>` : ""}
-
-                ${speakerText ? `<p class="agenda-speaker">${escapeHTML(speakerText)}</p>` : ""}
+                ${speakerText ? `<h3 class="agenda-title">${speakerText}</h3>` : ""}
 
                 ${descriptionHTML ? `<div class="agenda-description">${descriptionHTML}</div>` : ""}
             </article>
