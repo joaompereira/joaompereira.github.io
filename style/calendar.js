@@ -10,64 +10,74 @@ function escapeHTML(value) {
 }
 
 function formatDescription(description) {
-    if (!description) {
-        return "";
+    if (!description) return "";
+
+    const parsed = parseDescription(String(description));
+
+    if (parsed.title || parsed.abstract) {
+        const titleHTML = parsed.title ? `<strong>Title:</strong> ${escapeHTML(parsed.title)}<br>` : "";
+        const abstractHTML = parsed.abstract ? `<strong>Abstract:</strong> ${escapeHTML(parsed.abstract).replace(/\r\n|\r|\n/g, "<br>")}` : "";
+
+        return `${titleHTML}${abstractHTML}`;
     }
 
-    const text = String(description).trim();
+    return escapeHTML(String(description)).replace(/\r\n|\r|\n/g, "<br>");
+}
 
-    const match = text.match(/Title:\s*([\s\S]*?)\s*Abstract:\s*([\s\S]*)/i);
+function parseDescription(text) {
+    // Try to extract Title, Abstract, Speaker fields from the description blob
+    const result = { title: "", abstract: "", speaker: "" };
 
-    if (match) {
-        const title = escapeHTML(match[1].trim());
-        const abstract = escapeHTML(match[2].trim()).replace(/\r\n|\r|\n/g, "<br>");
-
-        return `
-            <strong>Title:</strong> ${title}
-            <br>
-            <strong>Abstract:</strong> ${abstract}
-        `;
+    const titleAbstractMatch = text.match(/Title:\s*([\s\S]*?)\s*Abstract:\s*([\s\S]*)/i);
+    if (titleAbstractMatch) {
+        result.title = titleAbstractMatch[1].trim();
+        result.abstract = titleAbstractMatch[2].trim();
     }
 
-    return escapeHTML(text).replace(/\r\n|\r|\n/g, "<br>");
+    const speakerMatch = text.match(/Speaker:\s*([^\r\n]*)/i) || text.match(/By:\s*([^\r\n]*)/i);
+    if (speakerMatch) {
+        result.speaker = speakerMatch[1].trim();
+    }
+
+    // If no title found but description starts with something like "Title - ..." or the summary might be the title
+    return result;
+}
+
+function slugify(value) {
+    return String(value || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 60);
 }
 
 async function getICSAgendaHTML(icsUrl) {
-    if (typeof ICAL === "undefined") {
-        throw new Error("ICAL.js is not loaded.");
-    }
+    if (typeof ICAL === "undefined") throw new Error("ICAL.js is not loaded.");
 
     const response = await fetch(icsUrl);
-
-    if (!response.ok) {
-        throw new Error(`Failed to fetch calendar. HTTP status: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`Failed to fetch calendar. HTTP status: ${response.status}`);
 
     const icsText = await response.text();
-
     const jcalData = ICAL.parse(icsText);
     const calendarComponent = new ICAL.Component(jcalData);
 
     const events = calendarComponent
         .getAllSubcomponents("vevent")
         .map(component => new ICAL.Event(component))
-        .sort((a, b) => {
-            return a.startDate.toJSDate() - b.startDate.toJSDate();
-        });
+        .sort((a, b) => a.startDate.toJSDate() - b.startDate.toJSDate());
 
     const first_date = new Date("2026-08-18");
     first_date.setHours(0, 0, 0, 0);
     const last_date = new Date("2026-12-01");
     last_date.setHours(0, 0, 0, 0);
 
-    let html = "";
+    // Build detailed entries and a compact table
+    let detailsHtml = "";
+    const rows = [];
 
     for (const event of events) {
         const eventDate = event.startDate.toJSDate();
-
-        if (eventDate < first_date || eventDate > last_date) {
-            continue;
-        }
+        if (eventDate < first_date || eventDate > last_date) continue;
 
         const formattedDate = eventDate.toLocaleDateString("en-US", {
             year: "numeric",
@@ -75,11 +85,22 @@ async function getICSAgendaHTML(icsUrl) {
             day: "numeric"
         });
 
-        const title = escapeHTML(event.summary || "Untitled event");
-        const description = formatDescription(event.description || "");
+        const rawDescription = event.description || "";
+        const parsed = parseDescription(String(rawDescription));
 
-        html += `
-            <article class="agenda-event">
+        const titleText = parsed.title || event.summary || "Untitled event";
+        const speakerText = parsed.speaker || "TBA";
+
+        const eventSlug = slugify(`${formattedDate}-${titleText}`) || slugify(event.summary || "event");
+        const eventId = `event-${eventSlug}`;
+        const speakerId = speakerText && speakerText !== "TBA" ? `speaker-${slugify(speakerText)}` : "";
+
+        const title = escapeHTML(titleText);
+        const descriptionHTML = formatDescription(rawDescription);
+
+        // Detailed entry with anchors for event and speaker
+        detailsHtml += `
+            <article class="agenda-event" id="${eventId}">
                 <time class="agenda-date" datetime="${eventDate.toISOString()}">
                     ${formattedDate}
                 </time>
@@ -88,16 +109,48 @@ async function getICSAgendaHTML(icsUrl) {
                     ${title}
                 </h3>
 
-                ${
-                    description
-                        ? `<div class="agenda-description">${description}</div>`
-                        : ""
-                }
+                ${speakerText && speakerText !== "TBA" ? `<p class="agenda-speaker"><a id="${speakerId}" class="speaker-anchor">${escapeHTML(speakerText)}</a></p>` : `<p class="agenda-speaker">TBA</p>`}
+
+                ${descriptionHTML ? `<div class="agenda-description">${descriptionHTML}</div>` : ""}
             </article>
+        `;
+
+        rows.push({ date: formattedDate, speaker: speakerText, title: titleText, eventId, speakerId });
+    }
+
+    // Build the compact table
+    if (rows.length === 0) {
+        return { tableHtml: "<p>No upcoming events.</p>", detailsHtml: "<p>No upcoming events.</p>" };
+    }
+
+    let tableHtml = `
+        <table class="agenda-summary" aria-describedby="Upcoming seminar schedule">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Speaker</th>
+                    <th>Title</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    for (const r of rows) {
+        const dateLink = `#${r.eventId}`;
+        const speakerLink = r.speaker !== "TBA" && r.speakerId ? `#${r.speakerId}` : null;
+
+        tableHtml += `
+            <tr>
+                <td class="agenda-col-date"><a href="${dateLink}">${escapeHTML(r.date)}</a></td>
+                <td class="agenda-col-speaker">${speakerLink ? `<a href="${speakerLink}">${escapeHTML(r.speaker)}</a>` : escapeHTML(r.speaker)}</td>
+                <td class="agenda-col-title">${escapeHTML(r.title)}</td>
+            </tr>
         `;
     }
 
-    return html || "<p>No upcoming events.</p>";
+    tableHtml += `</tbody></table>`;
+
+    return { tableHtml, detailsHtml };
 }
 
 async function loadICSCalendars() {
@@ -112,10 +165,19 @@ async function loadICSCalendars() {
         }
 
         try {
-            container.innerHTML = await getICSAgendaHTML(icsUrl);
+            const { tableHtml, detailsHtml } = await getICSAgendaHTML(icsUrl);
+
+            // Populate the summary table if present in the page
+            const tableContainer = document.getElementById("agenda-table");
+            if (tableContainer) tableContainer.innerHTML = tableHtml;
+
+            // Populate the detailed listing (the existing container)
+            container.innerHTML = detailsHtml;
         } catch (error) {
             console.error("Calendar loading error:", error);
             container.innerHTML = `<p>Unable to load calendar events. Error: ${error.message || error}</p>`;
+            const tableContainer = document.getElementById("agenda-table");
+            if (tableContainer) tableContainer.innerHTML = `<p>Unable to load calendar summary. Error: ${error.message || error}</p>`;
         }
     }
 }
