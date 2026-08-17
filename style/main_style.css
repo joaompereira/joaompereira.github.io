@@ -1526,8 +1526,19 @@ h3.agenda-title {
     margin-top: 2px;
 }
 
+.agenda-description-abstract-desktop {
+    margin-top: 2px;
+}
+
 .agenda-description-abstract-label {
     margin-right: 4px;
+}
+
+.agenda-description-abstract {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    color: inherit;
 }
 
 /* Mobile */
@@ -1551,6 +1562,10 @@ h3.agenda-title {
         display: none;
     }
 
+    .agenda-description-abstract-desktop {
+        display: none;
+    }
+
     .agenda-abstract-toggle {
         display: block;
     }
@@ -1559,8 +1574,12 @@ h3.agenda-title {
         display: flex;
     }
 
-    .agenda-abstract-toggle:not([open]) > .agenda-description-abstract-row {
+    .agenda-description-abstract-label {
         display: none;
+    }
+
+    .agenda-abstract-toggle:not([open]) > .agenda-description-abstract-row {
+        display: none !important;
     }
 
     .agenda-abstract-toggle[open] > .agenda-description-abstract-row {
@@ -1569,16 +1588,12 @@ h3.agenda-title {
 }
 
 @media screen and (min-width: 768px) {
-    .agenda-abstract-summary {
-        display: none;
+    .agenda-description-abstract-desktop {
+        display: block;
     }
 
     .agenda-abstract-toggle {
-        display: block;
-    }
-
-    .agenda-abstract-toggle > .agenda-description-abstract-row {
-        display: block;
+        display: none !important;
     }
 }
 
