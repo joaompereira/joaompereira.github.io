@@ -1490,6 +1490,9 @@ h3.agenda-title {
 }
 
 .agenda-abstract-summary {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     cursor: pointer;
     color: #ba0c2f;
     font-weight: 700;
@@ -1502,6 +1505,29 @@ h3.agenda-title {
 
 .agenda-abstract-toggle[open] .agenda-abstract-summary {
     margin-bottom: 6px;
+}
+
+.agenda-abstract-summary-label {
+    display: inline-block;
+}
+
+.agenda-abstract-summary-icon::before {
+    content: "▾";
+    display: inline-block;
+    transition: transform 0.2s ease;
+    transform: translateY(-1px);
+}
+
+.agenda-abstract-toggle[open] .agenda-abstract-summary-icon::before {
+    content: "▴";
+}
+
+.agenda-description-abstract-row {
+    margin-top: 2px;
+}
+
+.agenda-description-abstract-label {
+    margin-right: 4px;
 }
 
 /* Mobile */
@@ -1528,6 +1554,18 @@ h3.agenda-title {
     .agenda-abstract-toggle {
         display: block;
     }
+
+    .agenda-abstract-summary {
+        display: flex;
+    }
+
+    .agenda-abstract-toggle:not([open]) > .agenda-description-abstract-row {
+        display: none;
+    }
+
+    .agenda-abstract-toggle[open] > .agenda-description-abstract-row {
+        display: block;
+    }
 }
 
 @media screen and (min-width: 768px) {
@@ -1539,7 +1577,7 @@ h3.agenda-title {
         display: block;
     }
 
-    .agenda-abstract-toggle:not([open]) .agenda-description-abstract-row {
+    .agenda-abstract-toggle > .agenda-description-abstract-row {
         display: block;
     }
 }

@@ -13,10 +13,21 @@ function parseDescription(text) {
     // Try to extract Title, Abstract, Speaker fields from the description blob
     const result = { title: "", abstract: "", speaker: "" };
 
-    const titleAbstractMatch = text.match(/Title:\s*([\s\S]*?)\s*Abstract:\s*([\s\S]*)/i);
-    if (titleAbstractMatch) {
-        result.title = titleAbstractMatch[1].trim();
-        result.abstract = titleAbstractMatch[2].trim();
+    const titleMatch = text.match(/(?:^|\n)\s*Title(?:\s+of\s+the\s+talk)?\s*:\s*([\s\S]*?)(?=\n\s*(?:Abstract|Speaker|By|Title(?:\s+of\s+the\s+talk)?)\s*:|$)/i);
+    if (titleMatch) {
+        result.title = titleMatch[1].trim();
+    }
+
+    const abstractMatch = text.match(/(?:^|\n)\s*Abstract\s*:\s*([\s\S]*?)(?=\n\s*(?:Speaker|By|Title(?:\s+of\s+the\s+talk)?)\s*:|$)/i);
+    if (abstractMatch) {
+        result.abstract = abstractMatch[1].trim();
+    }
+
+    if (!result.title) {
+        const compactTitleMatch = text.match(/Title(?:\s+of\s+the\s+talk)?\s*:\s*([^\r\n]+)/i);
+        if (compactTitleMatch) {
+            result.title = compactTitleMatch[1].trim();
+        }
     }
 
     const speakerMatch = text.match(/Speaker:\s*([^\r\n]*)/i) || text.match(/By:\s*([^\r\n]*)/i);
@@ -82,9 +93,13 @@ async function getICSAgendaHTML(icsUrl) {
                     <span class="agenda-description-title">${escapeHTML(titleText)}</span><br>
                 </div>
                 ${abstractText ? `
-                    <details class="agenda-abstract-toggle" open>
-                        <summary class="agenda-abstract-summary">Abstract</summary>
+                    <details class="agenda-abstract-toggle">
+                        <summary class="agenda-abstract-summary">
+                            <span class="agenda-abstract-summary-label">Abstract</span>
+                            <span class="agenda-abstract-summary-icon" aria-hidden="true"></span>
+                        </summary>
                         <div class="agenda-description-abstract-row">
+                            <strong class="agenda-description-label agenda-description-abstract-label">Abstract:</strong>
                             <span class="agenda-description-abstract">${escapeHTML(abstractText).replace(/\r\n|\r|\n/g, "<br>")}</span>
                         </div>
                     </details>
