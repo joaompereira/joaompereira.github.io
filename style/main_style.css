@@ -1456,6 +1456,23 @@ h3.agenda-title {
     color: #111;
 }
 
+.agenda-description-title-row,
+.agenda-description-abstract-row {
+    display: block;
+}
+
+.agenda-description-label {
+    color: #ba0c2f;
+}
+
+.agenda-description-title {
+    font-weight: 400;
+}
+
+.agenda-description-abstract {
+    font-weight: 400;
+}
+
 .agenda-description strong {
     color: #ba0c2f;
 }
@@ -1466,6 +1483,25 @@ h3.agenda-title {
     display: block;
     content: "";
     margin-top: 10px;
+}
+
+.agenda-abstract-toggle {
+    margin-top: 6px;
+}
+
+.agenda-abstract-summary {
+    cursor: pointer;
+    color: #ba0c2f;
+    font-weight: 700;
+    list-style: none;
+}
+
+.agenda-abstract-summary::-webkit-details-marker {
+    display: none;
+}
+
+.agenda-abstract-toggle[open] .agenda-abstract-summary {
+    margin-bottom: 6px;
 }
 
 /* Mobile */
@@ -1483,6 +1519,28 @@ h3.agenda-title {
 
     .agenda-title {
         font-size: 1.25rem;
+    }
+
+    .agenda-table {
+        display: none;
+    }
+
+    .agenda-abstract-toggle {
+        display: block;
+    }
+}
+
+@media screen and (min-width: 768px) {
+    .agenda-abstract-summary {
+        display: none;
+    }
+
+    .agenda-abstract-toggle {
+        display: block;
+    }
+
+    .agenda-abstract-toggle:not([open]) .agenda-description-abstract-row {
+        display: block;
     }
 }
 

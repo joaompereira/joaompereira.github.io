@@ -9,21 +9,6 @@ function escapeHTML(value) {
         .replaceAll("'", "&#039;");
 }
 
-function formatDescription(description) {
-    if (!description) return "";
-
-    const parsed = parseDescription(String(description));
-
-    if (parsed.title || parsed.abstract) {
-        const titleHTML = parsed.title ? `<strong>Title:</strong> ${escapeHTML(parsed.title)}<br>` : "";
-        const abstractHTML = parsed.abstract ? `<strong>Abstract:</strong> ${escapeHTML(parsed.abstract).replace(/\r\n|\r|\n/g, "<br>")}` : "";
-
-        return `${titleHTML}${abstractHTML}`;
-    }
-
-    return escapeHTML(String(description)).replace(/\r\n|\r|\n/g, "<br>");
-}
-
 function parseDescription(text) {
     // Try to extract Title, Abstract, Speaker fields from the description blob
     const result = { title: "", abstract: "", speaker: "" };
@@ -41,14 +26,6 @@ function parseDescription(text) {
 
     // If no title found but description starts with something like "Title - ..." or the summary might be the title
     return result;
-}
-
-function slugify(value) {
-    return String(value || "")
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "")
-        .slice(0, 60);
 }
 
 async function getICSAgendaHTML(icsUrl) {
@@ -92,12 +69,28 @@ async function getICSAgendaHTML(icsUrl) {
         const speakerText = event.summary || "";
         // Title and abstract are extracted from the DESCRIPTION using the regex
         const titleText = parsed.title || "";
+        const abstractText = parsed.abstract || "";
 
         // Anchor IDs are defined only by the date (YYYY-MM-DD)
         const dateSlug = eventDate.toISOString().slice(0, 10);
         const eventId = `event-${dateSlug}`;
 
-        const descriptionHTML = formatDescription(rawDescription);
+        const descriptionHTML = titleText
+            ? `
+                <div class="agenda-description-title-row">
+                    <strong class="agenda-description-label">Title:</strong>
+                    <span class="agenda-description-title">${escapeHTML(titleText)}</span><br>
+                </div>
+                ${abstractText ? `
+                    <details class="agenda-abstract-toggle" open>
+                        <summary class="agenda-abstract-summary">Abstract</summary>
+                        <div class="agenda-description-abstract-row">
+                            <span class="agenda-description-abstract">${escapeHTML(abstractText).replace(/\r\n|\r|\n/g, "<br>")}</span>
+                        </div>
+                    </details>
+                ` : ""}
+            `
+            : "";
 
         // Detailed entry with anchors for event and speaker
         detailsHtml += `
