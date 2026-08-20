@@ -9,39 +9,87 @@ function escapeHTML(value) {
         .replaceAll("'", "&#039;");
 }
 
-function parseDescription(text) {
-    // Try to extract Title, Abstract, Speaker fields from the description blob
-    const result = { title: "", abstract: "", speaker: "" };
+function toDate(value) {
+    if (value instanceof Date) return value;
+    if (!value) return null;
 
-    const titleAbstractMatch = text.match(/Title:\s*([\s\S]*?)\s*Abstract:\s*([\s\S]*)/i);
-    if (titleAbstractMatch) {
-        result.title = titleAbstractMatch[1].trim();
-        result.abstract = titleAbstractMatch[2].trim();
-    }
-
-    const speakerMatch = text.match(/Speaker:\s*([^\r\n]*)/i) || text.match(/By:\s*([^\r\n]*)/i);
-    if (speakerMatch) {
-        result.speaker = speakerMatch[1].trim();
-    }
-
-    // If no title found but description starts with something like "Title - ..." or the summary might be the title
-    return result;
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-async function getICSAgendaHTML(icsUrl) {
-    if (typeof ICAL === "undefined") throw new Error("ICAL.js is not loaded.");
+function toTimeText(value) {
+    if (!value) return "";
+    if (value instanceof Date) {
+        return value.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+    }
 
-    const response = await fetch(icsUrl);
-    if (!response.ok) throw new Error(`Failed to fetch calendar. HTTP status: ${response.status}`);
+    const text = String(value).trim();
+    if (!text) return "";
 
-    const icsText = await response.text();
-    const jcalData = ICAL.parse(icsText);
-    const calendarComponent = new ICAL.Component(jcalData);
+    const dateCandidate = new Date(text);
+    if (!Number.isNaN(dateCandidate.getTime()) && /\d{4}-\d{2}-\d{2}|T/i.test(text)) {
+        return dateCandidate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+    }
 
-    const events = calendarComponent
-        .getAllSubcomponents("vevent")
-        .map(component => new ICAL.Event(component))
-        .sort((a, b) => a.startDate.toJSDate() - b.startDate.toJSDate());
+    return text;
+}
+
+function formatTimeRange(startTime, endTime) {
+    if (startTime && endTime) {
+        if ((startTime.slice(-2) === "AM" || startTime.slice(-2) === "PM") && startTime.slice(-2) === endTime.slice(-2)) {
+            return `${startTime.slice(0, -2).trim()}–${endTime}`;
+        }
+
+        return `${startTime}–${endTime}`;
+    }
+
+    return startTime || endTime || "";
+}
+
+function escapeHTMLPreserveLineBreaks(value) {
+    return escapeHTML(value).replace(/\r\n|\r|\n/g, "<br>");
+}
+
+function linkifyText(value) {
+    if (!value) return "";
+
+    const text = String(value);
+    const urlRegex = /(https?:\/\/[^\s<>"]+)/gi;
+
+    return text.replace(urlRegex, (url) => {
+        const trimmed = url.replace(/[.,;:!?)]*$/, "");
+        const trailing = url.slice(trimmed.length);
+        const escapedUrl = escapeHTML(trimmed);
+
+        return `<a href="${escapedUrl}" target="_blank" rel="noopener noreferrer">${escapedUrl}</a>${escapeHTML(trailing)}`;
+    });
+}
+
+function normalizeSeminar(item) {
+    const date = toDate(item?.date);
+    if (!date) return null;
+
+    const speaker = item?.speaker ? String(item.speaker).trim() : "";
+    const institution = item?.institution ? String(item.institution).trim() : "";
+    const title = item?.title ? String(item.title).trim() : "";
+    const location = item?.location ? String(item.location).trim() : "";
+    const abstractText = item?.abstract ? String(item.abstract).trim() : "";
+    const startTime = toTimeText(item?.startTime).trim().toUpperCase();
+    const endTime = toTimeText(item?.endTime).trim().toUpperCase();
+
+    return { date, speaker, institution, title, location, abstractText, startTime, endTime };
+}
+
+async function getSheetsAgendaHTML(endpointUrl) {
+    const response = await fetch(endpointUrl);
+    if (!response.ok) throw new Error(`Failed to fetch seminar data. HTTP status: ${response.status}`);
+
+    const rawData = await response.json();
+    if (!Array.isArray(rawData)) throw new Error("Seminar endpoint did not return a JSON array.");
+
+    const events = rawData
+        .map(normalizeSeminar)
+        .sort((a, b) => a.date - b.date);
 
     const first_date = new Date("2026-08-18");
     first_date.setHours(0, 0, 0, 0);
@@ -53,7 +101,7 @@ async function getICSAgendaHTML(icsUrl) {
     const rows = [];
 
     for (const event of events) {
-        const eventDate = event.startDate.toJSDate();
+        const eventDate = event.date;
         if (eventDate < first_date || eventDate > last_date) continue;
 
         const formattedDate = eventDate.toLocaleDateString("en-US", {
@@ -62,58 +110,64 @@ async function getICSAgendaHTML(icsUrl) {
             day: "numeric"
         });
 
-        const rawDescription = event.description || "";
-        const parsed = parseDescription(String(rawDescription));
-
-        // Speaker should come from the event SUMMARY (empty if absent)
-        const speakerText = event.summary || "";
-        // Title and abstract are extracted from the DESCRIPTION using the regex
-        const titleText = parsed.title || "";
-        const abstractText = parsed.abstract || "";
+        const speakerText = event.speaker;
+        const institutionText = event.institution;
+        const titleText = event.title;
+        const abstractText = event.abstractText;
+        const locationText = event.location;
+        const locationHtml = linkifyText(escapeHTML(locationText));
+        const timeText = formatTimeRange(event.startTime, event.endTime);
 
         // Anchor IDs are defined only by the date (YYYY-MM-DD)
         const dateSlug = eventDate.toISOString().slice(0, 10);
         const eventId = `event-${dateSlug}`;
 
-        const descriptionHTML = titleText
-            ? `
-                <div class="agenda-description-title-row">
-                    <strong class="agenda-description-label">Title:</strong>
-                    <span class="agenda-description-title">${escapeHTML(titleText)}</span><br>
-                </div>
-                ${abstractText ? `
-                    <div class="agenda-description-abstract-desktop">
-                        <strong class="agenda-description-label">Abstract:</strong>
-                        <span class="agenda-description-abstract">${escapeHTML(abstractText).replace(/\r\n|\r|\n/g, "<br>")}</span>
-                    </div>
-                    <details class="agenda-abstract-toggle">
-                        <summary class="agenda-abstract-summary">
-                            <span class="agenda-abstract-summary-label">Abstract:</span>
-                            <span class="agenda-abstract-summary-icon" aria-hidden="true"></span>
-                        </summary>
-                        <div class="agenda-description-abstract-row">
-                            <strong class="agenda-description-label agenda-description-abstract-label">Abstract:</strong>
-                            <span class="agenda-description-abstract">${escapeHTML(abstractText).replace(/\r\n|\r|\n/g, "<br>")}</span>
+        const dateLine = [formattedDate, timeText].filter(Boolean).join(", ");
+        // const titleLine = institutionText
+        //    ? `${speakerText} &emdash; ${institutionText}`
+        //    : speakerText;
+        const titleLine = `${speakerText}, ${institutionText}`;
+        if (speakerText) {
+            const descriptionHTML = (titleText || abstractText)
+                ? `
+                    ${titleText ? `
+                        <div class="agenda-description-title-row">
+                            <strong class="agenda-description-label">Title:</strong>
+                            <span class="agenda-description-title">${escapeHTML(titleText)}</span><br>
                         </div>
-                    </details>
-                ` : ""}
-            `
-            : "";
+                    ` : ""}
+                    ${abstractText ? `
+                        <div class="agenda-description-abstract-desktop">
+                            <strong class="agenda-description-label">Abstract:</strong>
+                            <span class="agenda-description-abstract">${escapeHTMLPreserveLineBreaks(abstractText)}</span>
+                        </div>
+                        <details class="agenda-abstract-toggle">
+                            <summary class="agenda-abstract-summary">
+                                <span class="agenda-abstract-summary-label">Abstract:</span>
+                                <span class="agenda-abstract-summary-icon" aria-hidden="true"></span>
+                            </summary>
+                            <div class="agenda-description-abstract-row">
+                                <strong class="agenda-description-label agenda-description-abstract-label">Abstract:</strong>
+                                <span class="agenda-description-abstract">${escapeHTMLPreserveLineBreaks(abstractText)}</span>
+                            </div>
+                        </details>
+                    ` : ""}
+                `
+                : "";
 
-        // Detailed entry with anchors for event and speaker
-        detailsHtml += `
-            <article class="agenda-event" id="${eventId}">
-                <time class="agenda-date" datetime="${eventDate.toISOString()}">
-                    ${formattedDate}
-                </time>
+            // Detailed entry with anchors for event and speaker
+            detailsHtml += `
+                <article class="agenda-event" id="${eventId}">
+                    <div class="agenda-date">${dateLine}${locationText ? `, <span class="agenda-location-link">${locationHtml}</span>` : ""}</div>
 
-                ${speakerText ? `<h3 class="agenda-title">${speakerText}</h3>` : ""}
+                    <h3 class="agenda-title">${escapeHTML(titleLine)}</h3>
 
-                ${descriptionHTML ? `<div class="agenda-description">${descriptionHTML}</div>` : ""}
-            </article>
-        `;
+                    ${descriptionHTML ? `<div class="agenda-description">${descriptionHTML}</div>` : ""}
+                </article>
+            `;
+        }
 
-        rows.push({ date: formattedDate, speaker: speakerText, title: titleText, eventId });
+        rows.push({ date: formattedDate, speaker: speakerText, institution: institutionText, title: titleText, eventId });
     }
 
     // Build the compact table
@@ -127,6 +181,7 @@ async function getICSAgendaHTML(icsUrl) {
                 <tr>
                     <th>Date</th>
                     <th>Speaker</th>
+                    <th>Institution</th>
                     <th>Title</th>
                 </tr>
             </thead>
@@ -139,6 +194,7 @@ async function getICSAgendaHTML(icsUrl) {
             <tr>
                 <td class="agenda-col-date"><a href="${dateLink}">${escapeHTML(r.date)}</a></td>
                 <td class="agenda-col-speaker">${escapeHTML(r.speaker)}</td>
+                <td class="agenda-col-institution">${escapeHTML(r.institution)}</td>
                 <td class="agenda-col-title">${escapeHTML(r.title)}</td>
             </tr>
         `;
@@ -149,33 +205,31 @@ async function getICSAgendaHTML(icsUrl) {
     return { tableHtml, detailsHtml };
 }
 
-async function loadICSCalendars() {
+async function loadSeminarCalendars() {
     const calendarContainers = document.querySelectorAll(".ics-calendar");
 
     for (const container of calendarContainers) {
-        const icsUrl = container.dataset.icsUrl;
+        const endpointUrl = container.dataset.sheetUrl || container.dataset.feedUrl || container.dataset.icsUrl;
 
-        if (!icsUrl) {
-            container.innerHTML = "<p>No calendar URL provided.</p>";
+        if (!endpointUrl) {
+            container.innerHTML = "<p>No seminar feed URL provided.</p>";
             continue;
         }
 
         try {
-            const { tableHtml, detailsHtml } = await getICSAgendaHTML(icsUrl);
+            const { tableHtml, detailsHtml } = await getSheetsAgendaHTML(endpointUrl);
 
-            // Populate the summary table if present in the page
             const tableContainer = document.getElementById("agenda-table");
             if (tableContainer) tableContainer.innerHTML = tableHtml;
 
-            // Populate the detailed listing (the existing container)
             container.innerHTML = detailsHtml;
         } catch (error) {
-            console.error("Calendar loading error:", error);
-            container.innerHTML = `<p>Unable to load calendar events. Error: ${error.message || error}</p>`;
+            console.error("Seminar loading error:", error);
+            container.innerHTML = `<p>Unable to load seminar events. Error: ${error.message || error}</p>`;
             const tableContainer = document.getElementById("agenda-table");
-            if (tableContainer) tableContainer.innerHTML = `<p>Unable to load calendar summary. Error: ${error.message || error}</p>`;
+            if (tableContainer) tableContainer.innerHTML = `<p>Unable to load seminar summary. Error: ${error.message || error}</p>`;
         }
     }
 }
 
-loadICSCalendars();
+loadSeminarCalendars();

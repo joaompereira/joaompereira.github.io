@@ -1441,11 +1441,11 @@ h1 {
 /* Speaker */
 
 h3.agenda-title {
-    margin-bottom: 10px;
+    margin-bottom: 18px;
     color: #474569;
     font-family: "Alegreya SC", serif;
     font-size: 1.2rem;
-    line-height: 1;
+    line-height: 1.2;
 }
 
 /* Abstract */
