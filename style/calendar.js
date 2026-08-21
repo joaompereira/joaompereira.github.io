@@ -13,8 +13,24 @@ function toDate(value) {
     if (value instanceof Date) return value;
     if (!value) return null;
 
+    const text = String(value).trim();
+    const ymdMatch = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (ymdMatch) {
+        const year = Number(ymdMatch[1]);
+        const monthIndex = Number(ymdMatch[2]) - 1;
+        const day = Number(ymdMatch[3]);
+        return new Date(year, monthIndex, day);
+    }
+
     const parsed = new Date(value);
     return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function getLocalDateSlug(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
 }
 
 function toTimeText(value) {
@@ -89,11 +105,12 @@ async function getSheetsAgendaHTML(endpointUrl) {
 
     const events = rawData
         .map(normalizeSeminar)
+        .filter(Boolean)
         .sort((a, b) => a.date - b.date);
 
-    const first_date = new Date("2026-08-18");
+    const first_date = new Date(2026, 7, 18);
     first_date.setHours(0, 0, 0, 0);
-    const last_date = new Date("2026-12-01");
+    const last_date = new Date(2026, 11, 1);
     last_date.setHours(0, 0, 0, 0);
 
     // Build detailed entries and a compact table
@@ -119,7 +136,7 @@ async function getSheetsAgendaHTML(endpointUrl) {
         const timeText = formatTimeRange(event.startTime, event.endTime);
 
         // Anchor IDs are defined only by the date (YYYY-MM-DD)
-        const dateSlug = eventDate.toISOString().slice(0, 10);
+        const dateSlug = getLocalDateSlug(eventDate);
         const eventId = `event-${dateSlug}`;
 
         const dateLine = [formattedDate, timeText].filter(Boolean).join(", ");
